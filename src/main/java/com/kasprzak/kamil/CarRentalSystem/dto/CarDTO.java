@@ -2,12 +2,13 @@ package com.kasprzak.kamil.CarRentalSystem.dto;
 
 import com.kasprzak.kamil.CarRentalSystem.enums.CarStatus;
 import com.kasprzak.kamil.CarRentalSystem.enums.CarType;
+import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 
 @Builder
 public record CarDTO(
-        Long id,
-        CarType type,
-        CarStatus status
+        @NotNull Long id,
+        @NotNull CarType type,
+        @NotNull CarStatus status
 ) {
 }
