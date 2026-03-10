@@ -17,8 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @ExtendWith(MockitoExtension.class)
 class ToReservationResponseDTOMapperTest {
 
-    @InjectMocks
-    private ToReservationResponseDTOMapper mapper;
+    private ToReservationResponseDTOMapper mapper = new ToReservationResponseDTOMapper();
 
     @Test
     void shouldMapReservationToReservationResponseDTO() {
@@ -33,6 +32,7 @@ class ToReservationResponseDTOMapperTest {
                 .car(car)
                 .startDate(LocalDateTime.of(2026, 3, 8, 10, 0))
                 .endDate(LocalDateTime.of(2026, 3, 11, 10, 0))
+                .clientName("name")
                 .build();
 
         // when
@@ -43,6 +43,7 @@ class ToReservationResponseDTOMapperTest {
         assertEquals(10L, result.reservationId());
         assertEquals(1L, result.carId());
         assertEquals(CarType.SEDAN, result.carType());
+        assertEquals("name", result.clientName());
         assertEquals(LocalDateTime.of(2026, 3, 8, 10, 0), result.startDate());
         assertEquals(LocalDateTime.of(2026, 3, 11, 10, 0), result.endDate());
     }

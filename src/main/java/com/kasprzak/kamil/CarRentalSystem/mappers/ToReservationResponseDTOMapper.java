@@ -16,6 +16,7 @@ public class ToReservationResponseDTOMapper {
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
                 .status(reservation.getStatus())
+                .clientName(reservation.getClientName())
                 .build();
     }
 }

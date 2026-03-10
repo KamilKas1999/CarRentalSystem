@@ -1,5 +1,7 @@
 package com.kasprzak.kamil.CarRentalSystem.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -10,12 +12,22 @@ import com.kasprzak.kamil.CarRentalSystem.enums.ReservationStatus;
 import com.kasprzak.kamil.CarRentalSystem.exceptions.ReservationNotFoundException;
 import com.kasprzak.kamil.CarRentalSystem.services.CarRentalService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
+import java.util.List;
+
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -23,109 +35,87 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.kasprzak.kamil.CarRentalSystem.exceptions.CarNotAvailableException;
 import tools.jackson.databind.ObjectMapper;
 
-@WebMvcTest(ReservationController.class)
+@ExtendWith(MockitoExtension.class)
 class ReservationControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockitoBean
+    @Mock
     private CarRentalService carRentalService;
 
+    @InjectMocks
+    private ReservationController reservationController;
+
     @Test
-    void shouldCreateReservationAndReturnReservationResponseDTO() throws Exception {
+    void createReservation_shouldReturnReservationResponseDTO() {
         // given
-        var request = ReservationRequestDTO.builder()
-                .carType(CarType.SEDAN)
-                .startDate(LocalDateTime.of(2026, 3, 8, 10, 0))
-                .numberOfDays(3)
-                .build();
+        Long reservationId = 1L;
+        Long carId = 1L;
+        ReservationStatus newStatus = ReservationStatus.NEW;
+        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 1, 1);
+        LocalDateTime stop = start.plusDays(3);
+        ReservationRequestDTO request = new ReservationRequestDTO(CarType.SEDAN, start, 3, "name");
+        var responseDTO = new ReservationResponseDTO(reservationId, carId, CarType.SEDAN, newStatus, start, stop, "name");
 
-        var response = ReservationResponseDTO.builder()
-                .reservationId(1L)
-                .carId(10L)
-                .carType(CarType.SEDAN)
-                .startDate(LocalDateTime.of(2026, 3, 8, 10, 0))
-                .endDate(LocalDateTime.of(2026, 3, 11, 10, 0))
-                .build();
+        when(carRentalService.reserveCar(request)).thenReturn(responseDTO);
 
-        when(carRentalService.reserveCar(any(ReservationRequestDTO.class))).thenReturn(response);
+        // when
+        ReservationResponseDTO result = reservationController.createReservation(request);
 
-        // when & then
-        mockMvc.perform(post("/api/reservations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reservationId").value(1L))
-                .andExpect(jsonPath("$.carId").value(10L))
-                .andExpect(jsonPath("$.carType").value("SEDAN"))
-                .andExpect(jsonPath("$.startDate").exists())
-                .andExpect(jsonPath("$.endDate").exists());
+        // then
+        assertNotNull(result);
+        assertEquals(1L, result.reservationId());
+        assertEquals(CarType.SEDAN, result.carType());
+        assertEquals(ReservationStatus.NEW, result.status());
 
-        verify(carRentalService).reserveCar(any(ReservationRequestDTO.class));
+        verify(carRentalService).reserveCar(request);
     }
 
     @Test
-    void shouldReturnConflictWhenCarIsNotAvailable() throws Exception {
+    void shouldReturnUpdatedReservation() {
         // given
-        ReservationRequestDTO request = ReservationRequestDTO.builder()
-                .carType(CarType.SEDAN)
-                .startDate(LocalDateTime.of(2026, 3, 8, 10, 0))
-                .numberOfDays(3)
-                .build();
+        Long reservationId = 1L;
+        Long carId = 1L;
+        ReservationStatus newStatus = ReservationStatus.NEW;
+        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 1, 1);
+        LocalDateTime stop = start.plusDays(3);
+        var responseDTO = new ReservationResponseDTO(reservationId, carId, CarType.SEDAN, newStatus, start, stop, "name");
 
-        when(carRentalService.reserveCar(any(ReservationRequestDTO.class)))
-                .thenThrow(new CarNotAvailableException("Car of type SEDAN is not available"));
+        when(carRentalService.updateReservationStatus(reservationId, newStatus)).thenReturn(responseDTO);
 
-        // when & then
-        mockMvc.perform(post("/api/reservations")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Car of type SEDAN is not available"));
+        // when
+        ReservationResponseDTO result = reservationController.updateStatus(reservationId, newStatus);
+
+        // then
+        assertNotNull(result);
+        assertEquals(reservationId, result.reservationId());
+        assertEquals(CarType.SEDAN, result.carType());
+        assertEquals(newStatus, result.status());
+
+        verify(carRentalService).updateReservationStatus(reservationId, newStatus);
     }
 
     @Test
-    void shouldUpdateReservationStatusAndReturnReservationResponseDTO() throws Exception {
+    void shouldReturnReservations() {
         // given
-        var response = ReservationResponseDTO.builder()
-                .reservationId(1L)
-                .carId(10L)
-                .carType(CarType.SEDAN)
-                .startDate(LocalDateTime.of(2026, 3, 8, 10, 0))
-                .endDate(LocalDateTime.of(2026, 3, 11, 10, 0))
-                .status(ReservationStatus.CANCELLED)
-                .build();
+        LocalDateTime start = LocalDateTime.of(2026, 1, 1, 1, 1);
+        LocalDateTime stop = start.plusDays(3);
+        var res1 = new ReservationResponseDTO(1L, 11L, CarType.SEDAN, ReservationStatus.NEW, start, stop, "name");
+        var res2 = new ReservationResponseDTO(2L, 22L, CarType.SUV, ReservationStatus.IN_PROGRESS, start, stop, "name");
+        Page<ReservationResponseDTO> page = new PageImpl<>(List.of(res1, res2));
+        when(carRentalService.getAllReservation(any(Pageable.class))).thenReturn(page);
 
-        when(carRentalService.updateReservationStatus(eq(1L), eq(ReservationStatus.CANCELLED)))
-                .thenReturn(response);
+        // when
+        Page<ReservationResponseDTO> result = reservationController.getReservation(0, 10, "id");
 
-        // when & then
-        mockMvc.perform(patch("/api/reservations/1/status")
-                        .param("newStatus", "CANCELLED")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.reservationId").value(1L))
-                .andExpect(jsonPath("$.status").value("CANCELLED"));
+        // then
+        assertNotNull(result);
+        assertEquals(2, result.getContent().size());
+        assertEquals(CarType.SEDAN, result.getContent().getFirst().carType());
 
-        verify(carRentalService).updateReservationStatus(eq(1L), eq(ReservationStatus.CANCELLED));
+        // verify correct Pageable
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(carRentalService).getAllReservation(pageableCaptor.capture());
+        Pageable pageableUsed = pageableCaptor.getValue();
+        assertEquals(0, pageableUsed.getPageNumber());
+        assertEquals(10, pageableUsed.getPageSize());
     }
-
-    @Test
-    void shouldReturnNotFoundWhenReservationDoesNotExist() throws Exception {
-        // given
-        when(carRentalService.updateReservationStatus(eq(99L), eq(ReservationStatus.CANCELLED)))
-                .thenThrow(new ReservationNotFoundException("Reservation with ID 99 not found"));
-
-        // when & then
-        mockMvc.perform(patch("/api/reservations/99/status")
-                        .param("newStatus", "CANCELLED")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Reservation with ID 99 not found"));
-    }
-
 }

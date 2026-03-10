@@ -6,16 +6,22 @@ import com.kasprzak.kamil.CarRentalSystem.dto.ReservationRequestDTO;
 import com.kasprzak.kamil.CarRentalSystem.dto.ReservationResponseDTO;
 import com.kasprzak.kamil.CarRentalSystem.enums.CarType;
 import com.kasprzak.kamil.CarRentalSystem.enums.ReservationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDateTime;
 
 public interface CarRentalService {
 
-    CarDTO addCar(CarType carType);
+    CarDTO addCar(CarType carType, String registration);
 
     ReservationResponseDTO reserveCar(ReservationRequestDTO request);
 
     boolean isCarAvailable(CarType type, LocalDateTime start, LocalDateTime end);
 
     ReservationResponseDTO updateReservationStatus(Long reservationId, ReservationStatus newStatus);
+
+    Page<ReservationResponseDTO> getAllReservation(Pageable pageable);
+
+    Page<CarDTO> getAllCars(Pageable pageable);
 }

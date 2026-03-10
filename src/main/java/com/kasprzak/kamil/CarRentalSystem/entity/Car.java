@@ -27,4 +27,7 @@ public class Car {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private CarStatus status;
+
+    @Column(nullable = false)
+    private String registration;
 }

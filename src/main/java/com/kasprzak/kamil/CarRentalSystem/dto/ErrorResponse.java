@@ -7,9 +7,9 @@ import java.time.LocalDateTime;
 
 @Builder
 public record ErrorResponse(
-        @NotNull int status,
-        @NotNull String error,
-        @NotNull String message,
-        @NotNull LocalDateTime timestamp
+        int status,
+        String error,
+        String message,
+        LocalDateTime timestamp
 ){
 }

@@ -71,22 +71,4 @@ class GlobalExceptionHandlerTest {
         assertEquals("Invalid", response.getBody().message());
         assertNotNull(response.getBody().timestamp());
     }
-
-    @Test
-    void shouldReturnInternalServerErrorExceptionIsThrown() {
-        // given
-        var ex = new Exception();
-
-        // when
-        ResponseEntity<ErrorResponse> response = globalExceptionHandler.handleException(ex);
-
-        // then
-        assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getBody().status());
-        assertEquals("Internal Server Error", response.getBody().error());
-        assertEquals("An unexpected error occurred", response.getBody().message());
-        assertNotNull(response.getBody().timestamp());
-    }
 }

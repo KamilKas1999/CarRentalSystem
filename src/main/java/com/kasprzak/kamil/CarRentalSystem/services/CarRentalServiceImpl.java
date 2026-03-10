@@ -10,10 +10,13 @@ import com.kasprzak.kamil.CarRentalSystem.enums.CarType;
 import com.kasprzak.kamil.CarRentalSystem.enums.ReservationStatus;
 import com.kasprzak.kamil.CarRentalSystem.exceptions.CarNotAvailableException;
 import com.kasprzak.kamil.CarRentalSystem.exceptions.ReservationNotFoundException;
+import com.kasprzak.kamil.CarRentalSystem.mappers.ToCarDTOMapper;
 import com.kasprzak.kamil.CarRentalSystem.mappers.ToReservationResponseDTOMapper;
 import com.kasprzak.kamil.CarRentalSystem.repositories.CarRepository;
 import com.kasprzak.kamil.CarRentalSystem.repositories.ReservationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,33 +29,30 @@ public class CarRentalServiceImpl implements CarRentalService {
 
     private final CarRepository carRepository;
     private final ReservationRepository reservationRepository;
-    private final ToReservationResponseDTOMapper mapper;
+    private final ToReservationResponseDTOMapper toReservationResponseDTOMapper;
+    private final ToCarDTOMapper toCarDTOMapper;
 
 
     @Override
     public boolean isCarAvailable(CarType type, LocalDateTime start, LocalDateTime end) {
         var blockingStatuses = List.of(ReservationStatus.NEW, ReservationStatus.IN_PROGRESS);
         return carRepository
-                .findFirstAvailableCar(type, CarStatus.ACTIVE, start, end,blockingStatuses)
+                .findFirstAvailableCar(type, CarStatus.ACTIVE, start, end, blockingStatuses)
                 .isPresent();
     }
 
     @Override
-    public CarDTO addCar(CarType carType) {
+    public CarDTO addCar(CarType carType, String registration) {
         var car = Car
                 .builder()
                 .type(carType)
                 .status(CarStatus.ACTIVE)
+                .registration(registration)
                 .build();
 
         Car savedCar = carRepository.save(car);
 
-        return CarDTO
-                .builder()
-                .id(savedCar.getId())
-                .status(savedCar.getStatus())
-                .type(savedCar.getType())
-                .build();
+        return toCarDTOMapper.map(savedCar);
     }
 
     @Override
@@ -70,11 +70,12 @@ public class CarRentalServiceImpl implements CarRentalService {
                 .startDate(start)
                 .endDate(end)
                 .status(ReservationStatus.NEW)
+                .clientName(request.clientName())
                 .build();
 
         reservationRepository.save(reservation);
 
-        return mapper.map(reservation);
+        return toReservationResponseDTOMapper.map(reservation);
 
     }
 
@@ -92,9 +93,18 @@ public class CarRentalServiceImpl implements CarRentalService {
 
         reservation.setStatus(newStatus);
         reservationRepository.save(reservation);
+        return toReservationResponseDTOMapper.map(reservation);
+    }
 
-        return mapper.map(reservation);
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ReservationResponseDTO> getAllReservation(Pageable pageable){
+        return reservationRepository.findAll(pageable).map(toReservationResponseDTOMapper::map);
+    }
 
+    @Override
+    public Page<CarDTO> getAllCars(Pageable pageable){
+        return carRepository.findAll(pageable).map(toCarDTOMapper::map);
     }
 
     protected boolean isValidStatusTransition(ReservationStatus current, ReservationStatus next) {

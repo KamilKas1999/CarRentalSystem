@@ -92,7 +92,7 @@ class CarRentalServiceImplTest {
         // given
         var start = LocalDateTime.of(2026, 3, 8, 10, 0);
         var end = start.plusDays(3);
-        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3);
+        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3, "name");
 
         when(carRepository.findFirstAvailableCar(eq(CarType.SEDAN), eq(CarStatus.ACTIVE), eq(start), eq(end), anyList()))
                 .thenReturn(Optional.of(mock(Car.class)));
@@ -114,7 +114,7 @@ class CarRentalServiceImplTest {
         // given
         var start = LocalDateTime.of(2026, 3, 8, 10, 0);
         var end = start.plusDays(3);
-        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3);
+        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3, "name");
 
         when(carRepository.findFirstAvailableCar(eq(CarType.SEDAN), eq(CarStatus.ACTIVE), eq(start), eq(end), anyList()))
                 .thenReturn(Optional.empty());
@@ -184,7 +184,7 @@ class CarRentalServiceImplTest {
         // given
         var start = LocalDateTime.of(2026, 3, 8, 10, 0);
         var end = start.plusDays(3);
-        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3);
+        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3, "name");
 
 
         when(carRepository.findFirstAvailableCar(eq(CarType.SEDAN), eq(CarStatus.ACTIVE), eq(start), eq(end), anyList()))
@@ -205,7 +205,7 @@ class CarRentalServiceImplTest {
         // given
         var start = LocalDateTime.of(2026, 3, 8, 10, 0);
         var end = start.plusDays(3);
-        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3);
+        var request = new ReservationRequestDTO(CarType.SEDAN, start, 3, "name");
         when(carRepository.findFirstAvailableCar(eq(CarType.SEDAN), eq(CarStatus.ACTIVE), eq(start), eq(end), anyList()))
                 .thenReturn(Optional.empty());
 

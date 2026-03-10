@@ -5,6 +5,10 @@ import com.kasprzak.kamil.CarRentalSystem.dto.CarDTO;
 import com.kasprzak.kamil.CarRentalSystem.enums.CarType;
 import com.kasprzak.kamil.CarRentalSystem.services.CarRentalService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,8 +22,8 @@ public class CarController {
     private final CarRentalService carRentalService;
 
     @PostMapping
-    public CarDTO addCar(@RequestParam CarType type) {
-        return carRentalService.addCar(type);
+    public CarDTO addCar(@RequestParam CarType type, @RequestParam String registration) {
+        return carRentalService.addCar(type, registration);
     }
 
     @GetMapping("/available")
@@ -31,5 +35,14 @@ public class CarController {
         LocalDateTime end = start.plusDays(numberOfDays);
         boolean available = carRentalService.isCarAvailable(type, start, end);
         return new AvailabilityResponseDTO(available);
+    }
+
+    @GetMapping
+    public Page<CarDTO> getCars(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortBy).descending());
+        return carRentalService.getAllCars(pageable);
     }
 }
